@@ -4,6 +4,5 @@ logs/*.log
 __pycache__/
 *.py[cod]
 logs/
-__pycache__/
 *.pyc
 .env
