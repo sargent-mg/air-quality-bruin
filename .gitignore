@@ -5,4 +5,6 @@ __pycache__/
 *.py[cod]
 logs/
 *.pyc
-.env
+.envinfrastructure/terraform/terraform.tfvars
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate*
