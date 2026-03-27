@@ -1,10 +1,8 @@
-.bruin.yml
-logs/runs
-logs/*.log
-__pycache__/
-*.py[cod]
 logs/
+__pycache__/
 *.pyc
-.envinfrastructure/terraform/terraform.tfvars
+.env
+.venv/
+infrastructure/terraform/terraform.tfvars
 infrastructure/terraform/.terraform/
 infrastructure/terraform/*.tfstate*

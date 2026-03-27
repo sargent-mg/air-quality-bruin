@@ -25,9 +25,9 @@ import requests
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
-OPENAQ_API_KEY = "5d93a44bd5e4316c4a423647efd98464eab25f759f3420d9446f93195ce77f34"
+OPENAQ_API_KEY = os.environ.get("OPENAQ_API_KEY")
 COUNTRIES_ID = 157  # Mexico
-BQ_PROJECT = "dtc-de-course-454704"
+BQ_PROJECT = os.environ.get("GCP_PROJECT_ID", "dtc-de-course-454704")
 BQ_DATASET = "air_quality_raw"
 BQ_TABLE = "locations"
 

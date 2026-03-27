@@ -19,10 +19,10 @@ KAFKA_TOPIC = "openaq-measurements"
 KAFKA_BOOTSTRAP_SERVERS = "localhost:19092"
 KAFKA_GROUP_ID = "openaq-bq-consumer"
 
-BQ_PROJECT = "dtc-de-course-454704"
+BQ_PROJECT = os.environ.get("GCP_PROJECT_ID", "dtc-de-course-454704")
 BQ_DATASET = "air_quality_raw"
 BQ_TABLE = "measurements_stream"
-SA_FILE = "/Users/adrianlr/Downloads/dtc-de-course-454704-fc0e1eb78d5e.json"
+SA_FILE = os.environ.get("GCP_SA_FILE")
 
 
 def get_bq_client():

@@ -34,7 +34,7 @@ import requests as http_requests
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
-BQ_PROJECT = "dtc-de-course-454704"
+BQ_PROJECT = os.environ.get("GCP_PROJECT_ID", "dtc-de-course-454704")
 BQ_DATASET = "air_quality_raw"
 S3_BASE = "https://openaq-data-archive.s3.amazonaws.com/records/csv.gz"
 

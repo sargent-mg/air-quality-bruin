@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from confluent_kafka import Producer
 import requests
 
-OPENAQ_API_KEY = "5d93a44bd5e4316c4a423647efd98464eab25f759f3420d9446f93195ce77f34"
+OPENAQ_API_KEY = os.environ.get("OPENAQ_API_KEY")
 OPENAQ_API_URL = "https://api.openaq.org/v3"
 COUNTRIES_ID = 157  # Mexico
 
