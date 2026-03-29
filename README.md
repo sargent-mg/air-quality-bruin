@@ -257,23 +257,23 @@ Use prompts like these against `fct_city_daily_aqi` and `dim_stations` (mention 
 
 - “Using BigQuery via Bruin, what date range do we have for PM2.5 in `fct_city_daily_aqi`, and how many distinct cities?”
 
-  ![IDE screenshot: Bruin prompt asking for PM2.5 date range and distinct cities in BigQuery](assets/img/prompt_1.png)
+  <img src="assets/img/prompt_1.png" alt="IDE screenshot: Bruin prompt asking for PM2.5 date range and distinct cities in BigQuery" width="520" />
 
 - “Which cities have the highest average PM2.5 over that period? Give me a top 10 with values in µg/m³.”
 
-  ![IDE screenshot: Bruin prompt for top 10 cities by average PM2.5 in µg/m³](assets/img/prompt_2.png)
+  <img src="assets/img/prompt_2.png" alt="IDE screenshot: Bruin prompt for top 10 cities by average PM2.5 in µg/m³" width="520" />
 
 - “What share of PM2.5 city-days exceed the WHO guideline flag in the mart?”
 
-  ![IDE screenshot: Bruin prompt for share of PM2.5 city-days exceeding WHO guideline](assets/img/prompt_3.png)
+  <img src="assets/img/prompt_3.png" alt="IDE screenshot: Bruin prompt for share of PM2.5 city-days exceeding WHO guideline" width="520" />
 
 - “How are stations split across reliability tiers in `dim_stations`?”
 
-  ![IDE screenshot: Bruin prompt for station counts by reliability tier in dim_stations](assets/img/prompt_4.png)
+  <img src="assets/img/prompt_4.png" alt="IDE screenshot: Bruin prompt for station counts by reliability tier in dim_stations" width="520" />
 
 - “Compare Monterrey and Guadalajara on PM2.5 by day if both appear in the data.”
 
-  ![IDE screenshot: Bruin prompt comparing Monterrey and Guadalajara PM2.5 by day](assets/img/prompt_5.png)
+  <img src="assets/img/prompt_5.png" alt="IDE screenshot: Bruin prompt comparing Monterrey and Guadalajara PM2.5 by day" width="520" />
 
 The assistant should run `bruin query --connection gcp` (or equivalent via MCP), show the numbers, and summarize. Ask follow-ups (“Why might Aguascalientes rank high?”, “Break that down by `aqi_category`”) the same way.
 
