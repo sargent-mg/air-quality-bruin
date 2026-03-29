@@ -61,6 +61,22 @@ def get_mexico_location_ids(client):
     return [row.location_id for row in result]
 
 
+def delete_date_range(client, start_date, end_date):
+    """Delete existing rows in the date range to ensure idempotency."""
+    table_ref = f"{BQ_PROJECT}.{BQ_DATASET}.measurements"
+    query = f"""
+        DELETE FROM `{table_ref}`
+        WHERE CAST(datetime AS DATE) BETWEEN '{start_date}' AND '{end_date}'
+    """
+    print(f"Deleting existing data from {start_date} to {end_date}...")
+    try:
+        job = client.query(query)
+        job.result()
+        print(f"Deleted {job.num_dml_affected_rows} existing rows.")
+    except Exception as e:
+        print(f"Delete skipped (table may not exist yet): {e}")
+
+
 def download_and_parse(location_id, year, month, day):
     """Download a single CSV.gz file from S3 and return parsed rows."""
     date_str = f"{year}{month:02d}{day:02d}"
@@ -135,6 +151,9 @@ def main():
     # Generate date range
     end_date = datetime.utcnow().date()
     start_date = end_date - timedelta(days=LOOKBACK_DAYS)
+
+    # Delete existing data in range for idempotency
+    delete_date_range(client, start_date, end_date)
 
     total_rows = 0
     total_files = 0

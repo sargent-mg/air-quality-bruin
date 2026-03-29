@@ -6,3 +6,12 @@ __pycache__/
 infrastructure/terraform/terraform.tfvars
 infrastructure/terraform/.terraform/
 infrastructure/terraform/*.tfstate*
+
+.bruin.yml
+logs/runsservice-account.json
+
+logs/runs
+logs/*.log
+*.py[cod]
+
+service-account.json

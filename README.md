@@ -114,7 +114,7 @@ Two Python assets handle batch ingestion, orchestrated by Bruin's dependency sys
 - Reads the list of Mexico location IDs from BigQuery (depends on Asset 1).
 - For each location, downloads daily CSV.gz files from the OpenAQ S3 archive (`s3://openaq-data-archive/records/csv.gz/locationid={id}/year={year}/month={month}/`).
 - Parses the 9-column CSV schema (location_id, sensors_id, location, datetime, lat, lon, parameter, units, value).
-- Loads to BigQuery with `WRITE_APPEND` disposition.
+- **Idempotent**: Uses a delete-then-append strategy — deletes existing rows in the target date range before loading, ensuring re-runs produce the same result without duplicates.
 - Quality checks: `not_null` on location_id, parameter, and value.
 
 ### Streaming Ingestion
@@ -144,7 +144,7 @@ BigQuery is organized in three layers:
 | Table | Source | Rows | Description |
 |-------|--------|------|-------------|
 | `locations` | OpenAQ API | 300 | Station metadata for Mexico |
-| `measurements` | S3 batch | 58,238+ | Historical sensor readings |
+| `measurements` | S3 batch | 192,708+ | Historical sensor readings |
 | `measurements_stream` | Kafka consumer | Ongoing | Real-time sensor readings |
 
 ### `air_quality_staging` (Staging Layer)
@@ -239,7 +239,7 @@ air-quality-bruin/
 │   └── assets/
 │       ├── ingest/
 │       │   ├── raw_locations.py                   # OpenAQ API → BigQuery (300 stations)
-│       │   ├── raw_measurements.py                # S3 CSV.gz → BigQuery (58K+ rows)
+│       │   ├── raw_measurements.py                # S3 CSV.gz → BigQuery (192K+ rows)
 │       │   └── requirements.txt                   # Python dependencies
 │       ├── staging/
 │       │   └── stg_measurements.sql               # Clean + normalize + deduplicate
@@ -357,4 +357,4 @@ To build your own:
 2. Create a new Blank Report
 3. Add data source: BigQuery → your project → `air_quality_marts` → `fct_city_daily_aqi`
 4. Add second data source: `air_quality_marts` → `dim_stations`
-5. Build the 4 tiles as described in the Dashboard section above 
+5. Build the 4 tiles as described in the Dashboard section above
