@@ -63,6 +63,12 @@ The pipeline supports both **batch** ingestion (historical data from the OpenAQ 
 │                      DASHBOARD                                  │
 │  Looker Studio (connected to BigQuery marts)                    │
 │  Tiles: KPI scorecards, bubble map, bar chart, time series      │
+└────────────────────────────────┬────────────────────────────────┘
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              ANALYSIS (AI DATA ANALYST ON BIGQUERY)             │
+│  Bruin MCP + IDE: prompts → `bruin query` on BigQuery → answers  │
+│  Same `air_quality_marts` tables as the dashboard               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -81,6 +87,7 @@ The pipeline supports both **batch** ingestion (historical data from the OpenAQ 
 | Data Quality | Bruin built-in checks | 17 checks: not_null, unique, non_negative, accepted_values |
 | Orchestration | Bruin CLI | DAG resolution, scheduling, dependency management |
 | Dashboard | Looker Studio | 4-tile interactive dashboard |
+| Analysis | Bruin MCP + IDE prompts | Ask questions in plain language; answers from live BigQuery via Bruin (see [Analysis](#analysis-ai-data-analyst-on-bigquery)) |
 
 ---
 
@@ -217,11 +224,52 @@ All tiles are filtered to PM2.5 by default and respond to the date range control
 
 ---
 
+## Analysis (AI data analyst on BigQuery)
+
+For the **Data Engineering Zoomcamp 2026 / Bruin** project track, analysis is **prompt-driven**: you ask questions in natural language and get answers grounded in **live BigQuery data** (the same `air_quality_marts` tables as the dashboard). **[Bruin MCP](https://bruin-data.github.io/bruin/getting-started/bruin-mcp.html)** connects your IDE assistant (Cursor, Claude Code, or VS Code) to the Bruin CLI so the model can run **`bruin query`** on your `gcp` connection, read the result set, and reply in plain language. You do not need to write SQL yourself unless you want to.
+
+### Setup
+
+1. Install [Bruin CLI](https://bruin-data.github.io/bruin/getting-started/introduction/installation.html) and configure **[Bruin MCP](https://bruin-data.github.io/bruin/getting-started/bruin-mcp.html)** (Cursor: **Settings → MCP & Integrations → Add Custom MCP** — command `bruin`, arguments `mcp`).
+2. Open this repo in the IDE and **`source .env`** in a terminal so `GCP_PROJECT_ID` and credentials match `.bruin.yml` (the assistant often needs a shell where the environment is loaded).
+
+### Example prompts
+
+Use prompts like these against **`fct_city_daily_aqi`** and **`dim_stations`** (mention the dataset `air_quality_marts` if the model needs a hint):
+
+- “Using BigQuery via Bruin, what date range do we have for PM2.5 in `fct_city_daily_aqi`, and how many distinct cities?”
+- “Which cities have the highest average PM2.5 over that period? Give me a top 10 with values in µg/m³.”
+- “What share of PM2.5 city-days exceed the WHO guideline flag in the mart?”
+- “How are stations split across reliability tiers in `dim_stations`?”
+- “Compare Monterrey and Guadalajara on PM2.5 by day if both appear in the data.”
+
+The assistant should run **`bruin query --connection gcp`** (or equivalent via MCP), show the numbers, and summarize. Ask follow-ups (“Why might Aguascalientes rank high?”, “Break that down by `aqi_category`”) the same way.
+
+### Example answers (snapshot from a prompting session)
+
+These results came from asking the questions above while connected to the deployed marts; they will change as new data lands.
+
+| Question | Answer (at time of check) |
+|----------|---------------------------|
+| PM2.5 date range & city count | 2026-03-16 → 2026-03-26 · **76** cities with PM2.5 rows |
+| City-day rows (PM2.5) | **780** |
+| Share of PM2.5 city-days above WHO guidance | **61.28%** |
+| Highest mean PM2.5 by city (period average) | **Aguascalientes** — **83.44** µg/m³ (11 days observed) |
+| Station reliability tiers | High: **144** · Medium: **3** · Low: **7** |
+
+### Optional: manual SQL
+
+If you prefer to run SQL yourself: `source .env` then `bruin query --connection gcp --query "..."` — see the [query command](https://bruin-data.github.io/bruin/commands/query.html) docs.
+
+Together with the Looker Studio dashboard, this covers **analysis on the warehouse** via **prompting → Bruin → BigQuery → answers**.
+
+---
+
 ## Project Structure
 
 ```
 air-quality-bruin/
-├── .bruin.yml                                    # Project config + GCP connection (uses ${VAR} syntax)
+├── .bruin.yml                                    # Project config + GCP connection
 ├── .env.example                                  # Template for environment variables
 ├── .gitignore
 ├── README.md
@@ -306,7 +354,12 @@ export GCP_PROJECT_ID=your-gcp-project-id
 export GCP_SA_FILE=service-account.json
 ```
 
-The `.bruin.yml` file uses these environment variables via `${VAR}` syntax:
+Use the same `.bruin.yml` across environments with a plugin-safe relative key file:
+
+- Local dev: keep `service-account.json` in repo root (git-ignored)
+- CI/CD: copy/mount the secret to `service-account.json` before running Bruin
+
+The `.bruin.yml` file keeps `project_id` environment-based for reproducibility:
 
 ```yaml
 default_environment: default
@@ -316,8 +369,10 @@ environments:
             google_cloud_platform:
                 - name: gcp
                   project_id: "${GCP_PROJECT_ID}"
-                  service_account_file: "${GCP_SA_FILE}"
+                  service_account_file: "service-account.json"
 ```
+
+Bruin plugin note: some plugin versions do not expand `${...}` for `service_account_file`. A fixed relative filename avoids machine-specific absolute paths and works both in CLI and plugin.
 
 The Python assets also read from environment variables:
 
@@ -334,6 +389,15 @@ source .env
 ```
 
 You need to run `source .env` every time you open a new terminal session.
+
+For CI jobs, place the secret at `service-account.json` in the project root before calling Bruin:
+
+```bash
+export OPENAQ_API_KEY="$OPENAQ_API_KEY"
+export GCP_PROJECT_ID="$GCP_PROJECT_ID"
+cp /secrets/gcp/service-account.json ./service-account.json
+bruin run pipelines/air_quality
+```
 
 Create `infrastructure/terraform/terraform.tfvars` (this file is also git-ignored):
 

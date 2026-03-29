@@ -4,5 +4,5 @@ environments:
         connections:
             google_cloud_platform:
                 - name: gcp
-                  project_id: "${GCP_PROJECT_ID}"
-                  service_account_file: "${GCP_SA_FILE}"
+                  project_id: ${GCP_PROJECT_ID}
+                  service_account_file: service-account.json
