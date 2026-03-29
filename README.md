@@ -221,7 +221,8 @@ All tiles are filtered to PM2.5 by default and respond to the date range control
 
 ```
 air-quality-bruin/
-├── .bruin.yml                                    # Project config + GCP connection
+├── .bruin.yml                                    # Project config + GCP connection (uses ${VAR} syntax)
+├── .env.example                                  # Template for environment variables
 ├── .gitignore
 ├── README.md
 │
@@ -259,6 +260,18 @@ air-quality-bruin/
 ### Prerequisites
 
 - **Google Cloud Platform** account with billing enabled
+- **GCP Service Account** with `BigQuery Admin` and `Storage Admin` roles. To create one:
+  ```bash
+  gcloud iam service-accounts create air-quality-pipeline --display-name="Air Quality Pipeline"
+  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+    --member="serviceAccount:air-quality-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/bigquery.admin"
+  gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+    --member="serviceAccount:air-quality-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/storage.admin"
+  gcloud iam service-accounts keys create service-account.json \
+    --iam-account=air-quality-pipeline@YOUR_PROJECT_ID.iam.gserviceaccount.com
+  ```
 - **Terraform** ≥ 1.0
 - **Docker** & Docker Compose
 - **Python** 3.10+
@@ -273,13 +286,28 @@ git clone <repository-url>
 cd air-quality-bruin
 ```
 
-Create `infrastructure/terraform/terraform.tfvars`:
-```hcl
-project_id       = "your-gcp-project-id"
-credentials_file = "/path/to/your/service-account-key.json"
+Copy your GCP service account key file into the project root (this file is git-ignored):
+
+```bash
+cp /path/to/your/service-account-key.json ./service-account.json
 ```
 
-Update `.bruin.yml` with your GCP connection:
+Create a `.env` file from the example (this file is git-ignored):
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your actual values:
+
+```bash
+export OPENAQ_API_KEY=your-openaq-api-key
+export GCP_PROJECT_ID=your-gcp-project-id
+export GCP_SA_FILE=service-account.json
+```
+
+The `.bruin.yml` file uses these environment variables via `${VAR}` syntax:
+
 ```yaml
 default_environment: default
 environments:
@@ -287,14 +315,32 @@ environments:
         connections:
             google_cloud_platform:
                 - name: gcp
-                  project_id: "your-gcp-project-id"
-                  service_account_file: "/path/to/your/service-account-key.json"
+                  project_id: "${GCP_PROJECT_ID}"
+                  service_account_file: "${GCP_SA_FILE}"
 ```
 
-Update the Python assets (`raw_locations.py`, `raw_measurements.py`, `consumer.py`) with your:
-- `BQ_PROJECT` (GCP project ID)
-- `OPENAQ_API_KEY` (your OpenAQ API key)
-- `SA_FILE` in consumer.py (path to service account key)
+The Python assets also read from environment variables:
+
+```python
+# In raw_locations.py and raw_measurements.py
+OPENAQ_API_KEY = os.environ.get("OPENAQ_API_KEY")
+BQ_PROJECT = os.environ.get("GCP_PROJECT_ID")
+```
+
+**Important:** You must load the environment variables before running any Bruin command:
+
+```bash
+source .env
+```
+
+You need to run `source .env` every time you open a new terminal session.
+
+Create `infrastructure/terraform/terraform.tfvars` (this file is also git-ignored):
+
+```hcl
+project_id       = "your-gcp-project-id"
+credentials_file = "../../service-account.json"
+```
 
 ### Step 2: Provision Infrastructure
 
@@ -310,7 +356,7 @@ This creates the GCS bucket and 3 BigQuery datasets.
 
 ```bash
 cd ../..
-git init  # Bruin requires a git repo
+source .env
 bruin validate .
 bruin run pipelines/air_quality
 ```
@@ -334,6 +380,7 @@ docker exec redpanda rpk topic create openaq-measurements --partitions 3
 In terminal 1 — start the producer:
 ```bash
 cd pipelines/air_quality/assets/streaming
+source ../../../../.env  # Load environment variables
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -343,6 +390,7 @@ python producer.py --max-locations 20 --interval 300
 In terminal 2 — start the consumer:
 ```bash
 cd pipelines/air_quality/assets/streaming
+source ../../../../.env  # Load environment variables
 source .venv/bin/activate
 python consumer.py --flush-interval 15
 ```
