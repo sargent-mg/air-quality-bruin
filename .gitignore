@@ -15,4 +15,4 @@ logs/*.log
 *.py[cod]
 
 service-account.json
-logs/queries
+logs/queriesPROJECT_SUMMARY.md
